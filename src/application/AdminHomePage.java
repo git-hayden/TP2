@@ -36,7 +36,7 @@ public class AdminHomePage {
         Button discussionBoardBtn = new Button("Discussion Board");
         discussionBoardBtn.setPrefWidth(200);
         discussionBoardBtn.setOnAction(e -> {
-            DisussionBoardPage dbPage = new DisussionBoardPage(stage, userName, "Admin");
+            DiscussionBoardPage dbPage = new DiscussionBoardPage(stage, userName, "admin");
             stage.setScene(dbPage.createScene());
         });
         
