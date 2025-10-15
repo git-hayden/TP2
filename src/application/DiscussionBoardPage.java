@@ -163,17 +163,24 @@ public class DiscussionBoardPage {
                             ? answer.getCreatedAt().format(formatter)
                             : "unknown time";
 
-                    String checkmark = answer.getIsAccepted() ? "                 [✓] Top Answer" : "";
-
-                    String display = String.format(
-                        "%s\n(by %s at %s)%s",
+                    Label contentLabel = new Label(String.format(
+                        "%s\n(by %s at %s)",
                         answer.getContent(),
                         answer.getAuthorUserName(),
-                        timeInfo,
-                        checkmark
-                    );
+                        timeInfo
+                    ));
+                    contentLabel.setWrapText(true);
 
-                    setText(display);
+                    Label checkmarkLabel = new Label(answer.getIsAccepted() ? "                [✓] Verified Answer" : "");
+                    checkmarkLabel.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
+
+                    HBox hBox = new HBox();
+                    hBox.setAlignment(Pos.CENTER_LEFT);
+                    HBox.setHgrow(contentLabel, Priority.ALWAYS);
+                    hBox.getChildren().addAll(contentLabel, checkmarkLabel);
+
+                    setGraphic(hBox);
+                    setText(null);
                 }
             }
         });
