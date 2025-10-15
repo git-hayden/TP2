@@ -37,7 +37,7 @@ public class Replies {
     }
     
     // get all replies for a specific answer
-    public Replies getRepliesForQuestion(int answerId) {
+    public Replies getRepliesForAnswer(int answerId) {
         List<Reply> filtered = replyList.stream()
             .filter(a -> a.getAnswerId() == answerId)
             .collect(Collectors.toList());
@@ -60,7 +60,7 @@ public class Replies {
     }
     
     // remove all replies for a specific answer
-    public boolean deleteRepliesForQuestion(int answerId) {
+    public boolean deleteRepliesForAnswer(int answerId) {
         return replyList.removeIf(a -> a.getAnswerId() == answerId);
     }
     
