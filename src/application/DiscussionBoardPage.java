@@ -156,9 +156,24 @@ public class DiscussionBoardPage {
                     setText(null);
                     setGraphic(null);
                 } else {
-                    // checkmark if accepted
-                    String checkmark = answer.getIsAccepted() ? "       [✓] Top Answer" : "";
-                    setText(answer.getContent() + checkmark);
+                    java.time.format.DateTimeFormatter formatter =
+                        java.time.format.DateTimeFormatter.ofPattern("hh:mm a · MMM dd, yyyy");
+
+                    String timeInfo = (answer.getCreatedAt() != null)
+                            ? answer.getCreatedAt().format(formatter)
+                            : "unknown time";
+
+                    String checkmark = answer.getIsAccepted() ? "                 [✓] Top Answer" : "";
+
+                    String display = String.format(
+                        "%s\n(by %s at %s)%s",
+                        answer.getContent(),
+                        answer.getAuthorUserName(),
+                        timeInfo,
+                        checkmark
+                    );
+
+                    setText(display);
                 }
             }
         });
