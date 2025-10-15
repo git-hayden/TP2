@@ -22,7 +22,7 @@ public class DiscussionBoardValidator {
         }
         return null; //if the title is valid, do not return anything
     }
-    //validate the content of the question/answer
+    //validate the content of the question/answer/reply
     public static String validateContent(String content) {
         if (content == null || content.trim().isEmpty()) {
             return "Content cannot be empty";
@@ -59,6 +59,10 @@ public class DiscussionBoardValidator {
     }
     //validate the complete answer
     public static String validateAnswer(String content) {
+        return validateContent(content);
+    }
+    //validate the complete reply
+    public static String validateReply(String content) {
         return validateContent(content);
     }
 

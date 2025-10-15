@@ -12,7 +12,7 @@ import databasePart1.DiscussionBoardDAO;
 import java.sql.SQLException;
 
 //UI for the discussion board
-public class DisussionBoardPage {
+public class DiscussionBoardPage {
     private Stage stage;
     private String currentUserName;
     private String currentUserRole;
@@ -22,13 +22,17 @@ public class DisussionBoardPage {
     private ListView<Question> questionListView;
     private TextArea questionDetailArea;
     private ListView<Answer> answerListView;
+    private ListView<Reply> replyListView;
     private TextField searchField;
     private ComboBox<String> filterComboBox;
 
     //currently selected question 
     private Question selectedQuestion;
+    
+    //currently selected answer
+    private Answer selectedAnswer;
 
-    public DisussionBoardPage(Stage stage, String currentUserName, String currentUserRole) {
+    public DiscussionBoardPage(Stage stage, String currentUserName, String currentUserRole) {
         this.stage = stage;
         this.currentUserName = currentUserName;
         this.currentUserRole = currentUserRole;
@@ -51,7 +55,7 @@ public class DisussionBoardPage {
         //left: question list
         mainLayout.setLeft(createQuestionsSection());
 
-        //center: question detail and answer list
+        //center: question detail, answer list, and reply list
         mainLayout.setCenter(createDetailSection());
 
         //right: action buttons.
@@ -125,7 +129,7 @@ public class DisussionBoardPage {
         return questionsBox;
 
 }
-    //create center section with question detail and answer list
+    //create center section with question detail, answer list, and reply list
     private VBox createDetailSection() {
         VBox detailBox = new VBox(10);
         detailBox.setPadding(new Insets(10));
@@ -144,7 +148,7 @@ public class DisussionBoardPage {
         answerLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
 
         answerListView = new ListView<>();
-        answerListView.setPrefHeight(350);
+        answerListView.setPrefHeight(175);
 
         //cell factory for answer list
         answerListView.setCellFactory(lv -> new ListCell<Answer>() {
@@ -159,8 +163,29 @@ public class DisussionBoardPage {
                 }
             }
         });
+        answerListView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> displayAnswerDetail(newVal));
+        
+        //reply list
+        Label replyLabel = new Label("Replies");
+        replyLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
 
-        detailBox.getChildren().addAll(detailLabel, questionDetailArea, answerLabel, answerListView);
+        replyListView = new ListView<>();
+        replyListView.setPrefHeight(175);
+
+        //cell factory for reply list
+        replyListView.setCellFactory(lv -> new ListCell<Reply>() {
+            @Override
+            protected void updateItem(Reply reply, boolean empty) {
+                super.updateItem(reply, empty);
+                if (empty || reply == null) {
+                    setText(null);
+                } else {
+                    setText(reply.getContent() + "\n - " + reply.getAuthorUserName() + " (" + reply.getCreatedAt().toLocalDate() + ")");
+                }
+            }
+        });
+
+        detailBox.getChildren().addAll(detailLabel, questionDetailArea, answerLabel, answerListView, replyLabel, replyListView);
         return detailBox;
 }
 //create right section with action buttons
@@ -194,6 +219,18 @@ public class DisussionBoardPage {
         Button deleteAnswerBtn = new Button("Delete Answer");
         deleteAnswerBtn.setPrefWidth(180);
         deleteAnswerBtn.setOnAction(e -> deleteAnswer());
+        //add answer
+        Button addReplyBtn = new Button("Add Reply");
+        addReplyBtn.setPrefWidth(180);
+        addReplyBtn.setOnAction(e -> addReply());
+        //edit answer
+        Button editReplyBtn = new Button("Edit Reply");
+        editReplyBtn.setPrefWidth(180);
+        editReplyBtn.setOnAction(e -> editReply());
+        //delete answer
+        Button deleteReplyBtn = new Button("Delete Reply");
+        deleteReplyBtn.setPrefWidth(180);
+        deleteReplyBtn.setOnAction(e -> deleteReply());
         //refresh button
         Button refreshBtn = new Button("Refresh");
         refreshBtn.setPrefWidth(180);
@@ -206,6 +243,8 @@ public class DisussionBoardPage {
             createQuestionBtn, editQuestionBtn, deleteQuestionBtn,
             new Separator(),
             addAnswerBtn, editAnswerBtn, deleteAnswerBtn,
+            new Separator(),
+            addReplyBtn, editReplyBtn, deleteReplyBtn,
             new Separator(),
             refreshBtn, backBtn
         );
@@ -282,7 +321,7 @@ public class DisussionBoardPage {
             return;
         }
         //check permissions (only admin or author can edit)
-        if(!selectedQuestion.getAuthorUserName().equals(currentUserName) && !currentUserRole.equals("Admin")) {
+        if(!selectedQuestion.getAuthorUserName().equals(currentUserName) && !currentUserRole.equals("admin")) {
             showError("You are not authorized to edit this question");
             return;
         }
@@ -346,7 +385,7 @@ public class DisussionBoardPage {
             return;
         }
         //check permissions (only admin or author can delete)
-        if(!selectedQuestion.getAuthorUserName().equals(currentUserName) && !currentUserRole.equals("Admin")) {
+        if(!selectedQuestion.getAuthorUserName().equals(currentUserName) && !currentUserRole.equals("admin")) {
             showError("You are not authorized to delete this question");
             return;
         }
@@ -391,6 +430,8 @@ public class DisussionBoardPage {
             Answer newAnswer = new Answer(selectedQuestion.getQuestionId(), response.trim(), currentUserName);
             try {
                 dao.createAnswer(newAnswer);
+                selectedQuestion.setIsAnswered(true);
+                dao.updateQuestion(selectedQuestion);
                 showInfo("Answer added successfully!");
                 displayQuestionDetail(selectedQuestion);
             } catch (SQLException e) {
@@ -400,13 +441,12 @@ public class DisussionBoardPage {
     }
     //edit an answer
     private void editAnswer() {
-        Answer selectedAnswer = answerListView.getSelectionModel().getSelectedItem();
         if (selectedAnswer == null) {
             showError("Please select an answer to edit");
             return;
         }
         //check permissions (only author or admin can edit)
-        if(!selectedAnswer.getAuthorUserName().equals(currentUserName) && !currentUserRole.equals("Admin")) {
+        if(!selectedAnswer.getAuthorUserName().equals(currentUserName) && !currentUserRole.equals("admin")) {
             showError("You are not authorized to edit this answer");
             return;
         }
@@ -432,13 +472,12 @@ public class DisussionBoardPage {
     }
     //delete an answer
     private void deleteAnswer() {
-        Answer selectedAnswer = answerListView.getSelectionModel().getSelectedItem();
         if (selectedAnswer == null) {
         showError("Please select an answer to delete");
             return;
         }
         //check permissions (only author or admin can delete)
-        if(!selectedAnswer.getAuthorUserName().equals(currentUserName) && !currentUserRole.equals("Admin")) {
+        if(!selectedAnswer.getAuthorUserName().equals(currentUserName) && !currentUserRole.equals("admin")) {
             showError("You are not authorized to delete this answer");
             return;
         }
@@ -455,6 +494,95 @@ public class DisussionBoardPage {
                     displayQuestionDetail(selectedQuestion);
                 } catch (SQLException e) {
                     showError("Failed to delete answer: " + e.getMessage());
+                }
+            }
+        });
+    }
+    //add a reply
+    private void addReply() {
+        if (selectedAnswer == null) {
+            showError("Please select an answer to add a reply");
+            return;
+        }
+        //dialog for adding a reply
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Add Answer");
+        dialog.setHeaderText("Add reply to: " + selectedAnswer.getContent());
+        dialog.setContentText("Enter the content of the reply");
+
+        dialog.showAndWait().ifPresent(response -> {
+            String error = DiscussionBoardValidator.validateReply(response);
+            if (error != null) {
+                showError(error);
+                return;
+            }
+            Reply newReply = new Reply(selectedAnswer.getAnswerId(), response.trim(), currentUserName);
+            try {
+                dao.createReply(newReply);
+                showInfo("Reply added successfully!");
+                displayAnswerDetail(selectedAnswer);
+            } catch (SQLException e) {
+                showError("Failed to add reply: " + e.getMessage());
+            }
+        });
+    }
+    //edit a reply
+    private void editReply() {
+        Reply selectedReply = replyListView.getSelectionModel().getSelectedItem();
+        if (selectedReply == null) {
+            showError("Please select a reply to edit");
+            return;
+        }
+        //check permissions (only author or admin can edit)
+        if(!selectedReply.getAuthorUserName().equals(currentUserName) && !currentUserRole.equals("admin")) {
+            showError("You are not authorized to edit this reply");
+            return;
+        }
+        TextInputDialog dialog = new TextInputDialog(selectedReply.getContent());
+        dialog.setTitle("Edit Reply");
+        dialog.setContentText("Reply:");
+
+        dialog.showAndWait().ifPresent(content -> {
+            String error = DiscussionBoardValidator.validateReply(content);
+            if (error != null) {
+                showError(error);
+                return;
+            }
+            selectedReply.setContent(content.trim());
+            try {
+                dao.updateReply(selectedReply);
+                showInfo("Reply updated successfully!");
+                displayAnswerDetail(selectedAnswer);
+            } catch (SQLException e) {
+                showError("Failed to update reply: " + e.getMessage());
+            }
+        });
+    }
+    //delete a reply
+    private void deleteReply() {
+        Reply selectedReply = replyListView.getSelectionModel().getSelectedItem();
+        if (selectedReply == null) {
+        showError("Please select a reply to delete");
+            return;
+        }
+        //check permissions (only author or admin can delete)
+        if(!selectedReply.getAuthorUserName().equals(currentUserName) && !currentUserRole.equals("admin")) {
+            showError("You are not authorized to delete this reply");
+            return;
+        }
+        //dialog for deleting a reply
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Delete Reply");
+        confirm.setHeaderText("Are you sure you want to delete this reply?");
+
+        confirm.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                try {
+                    dao.deleteReply(selectedReply.getReplyId());
+                    showInfo("Reply deleted successfully");
+                    displayAnswerDetail(selectedAnswer);
+                } catch (SQLException e) {
+                    showError("Failed to delete reply: " + e.getMessage());
                 }
             }
         });
@@ -493,7 +621,20 @@ public class DisussionBoardPage {
                 answerListView.setItems(answerList);
             } catch (SQLException e) { showError("Failed to load answers: " + e.getMessage());}
         }
-        //perofm search
+        //display answer's replies
+        private void displayAnswerDetail(Answer answer) {
+        	selectedAnswer = answer;
+        	if(answer == null) {
+        		replyListView.setItems(FXCollections.observableArrayList());
+        		return;
+        	}
+        	try {
+        		Replies replies = dao.getRepliesForAnswer(answer.getAnswerId());
+        		ObservableList<Reply> replyList = FXCollections.observableArrayList(replies.getAllReplies());
+        		replyListView.setItems(replyList);
+        	} catch (SQLException e) { showError("Failed to load replies: " + e.getMessage());}
+        }
+        //perform search
         private void performSearch() {
             String keyword = searchField.getText();
             String error = DiscussionBoardValidator.validateSearchQuery(keyword);
@@ -549,11 +690,17 @@ public class DisussionBoardPage {
                     displayQuestionDetail(refreshed);
                 }catch (SQLException e) {displayQuestionDetail(null);}
             }
+            if(selectedAnswer != null) {
+                try {
+                    Answer refreshed = dao.getAnswerById(selectedAnswer.getAnswerId());
+                    displayAnswerDetail(refreshed);
+                }catch (SQLException e) {displayAnswerDetail(null);}
+            }
         }
 
     //navigate to home page for role
     private void goBack() {
-        if(currentUserRole.equals("Admin")) {
+        if(currentUserRole.equals("admin")) {
             AdminHomePage adminHomePage = new AdminHomePage(stage,currentUserName);
             stage.setScene(adminHomePage.createScene());
         } else {
