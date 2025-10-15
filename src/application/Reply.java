@@ -12,8 +12,8 @@ public class Reply {
     private LocalDateTime updatedAt;
     
     // constructor getter and setter
-    public Reply(int replyId, String content, String authorUserName) {
-        this.replyId = replyId;
+    public Reply(int answerId, String content, String authorUserName) {
+        this.answerId = answerId;
         this.content = content;
         this.authorUserName = authorUserName;
         this.createdAt = LocalDateTime.now();
