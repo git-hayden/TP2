@@ -29,6 +29,7 @@ public class DiscussionBoardPage {
     private Question selectedQuestion;
 
     private Button markCorrectBtn;
+    private Button markHelpfulBtn;
 
     public DiscussionBoardPage(Stage stage, String currentUserName, String currentUserRole) {
         this.stage = stage;
@@ -171,13 +172,24 @@ public class DiscussionBoardPage {
                     ));
                     contentLabel.setWrapText(true);
 
-                    Label checkmarkLabel = new Label(answer.getIsAccepted() ? "                [✓] Verified Answer" : "");
-                    checkmarkLabel.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
+                    VBox statusBox = new VBox(2);
 
-                    HBox hBox = new HBox();
+                    if (answer.getIsAccepted()) {
+                        Label verifiedLabel = new Label("          [✓] Verified Answer");
+                        verifiedLabel.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
+                        statusBox.getChildren().add(verifiedLabel);
+                    }
+
+                    if (answer.isCorrect()) {
+                        Label helpfulLabel = new Label("          [✓] Student Found Helpful");
+                        helpfulLabel.setStyle("-fx-text-fill: blue; -fx-font-weight: bold;");
+                        statusBox.getChildren().add(helpfulLabel);
+                    }
+
+                    HBox hBox = new HBox(10);
                     hBox.setAlignment(Pos.CENTER_LEFT);
                     HBox.setHgrow(contentLabel, Priority.ALWAYS);
-                    hBox.getChildren().addAll(contentLabel, checkmarkLabel);
+                    hBox.getChildren().addAll(contentLabel, statusBox);
 
                     setGraphic(hBox);
                     setText(null);
@@ -234,6 +246,11 @@ public class DiscussionBoardPage {
         markCorrectBtn.setPrefWidth(180);
         markCorrectBtn.setOnAction(e -> markAnswerAsCorrect());
         markCorrectBtn.setDisable(!"admin".equals(currentUserRole));
+        // Mark as Helpful button (student only)
+        markHelpfulBtn = new Button("Mark as Helpful");
+        markHelpfulBtn.setPrefWidth(180);
+        markHelpfulBtn.setOnAction(e -> markAnswerAsHelpful());
+        markHelpfulBtn.setDisable("admin".equals(currentUserRole));
         //refresh button
         Button refreshBtn = new Button("Refresh");
         refreshBtn.setPrefWidth(180);
@@ -254,7 +271,7 @@ public class DiscussionBoardPage {
             actionBox.getChildren().addAll(
                 createQuestionBtn, editQuestionBtn, deleteQuestionBtn,
                 new Separator(),
-                addAnswerBtn, editAnswerBtn, deleteAnswerBtn,
+                addAnswerBtn, editAnswerBtn, deleteAnswerBtn, markHelpfulBtn,
                 new Separator(),
                 refreshBtn, backBtn
             );
@@ -684,6 +701,42 @@ public class DiscussionBoardPage {
 
         } catch (SQLException e) {
             showError("Failed to update answer status: " + e.getMessage());
+        }
+    }
+    
+    // Mark selected answer as helpful (student only)
+    private void markAnswerAsHelpful() {
+        Answer selected = answerListView.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showError("Please select an answer to mark/unmark as helpful.");
+            return;
+        }
+
+        try {
+            boolean isHelpful = selected.isCorrect();
+
+            if (isHelpful) {
+                // Unmark
+                selected.setCorrect(false);
+                dao.updateAnswer(selected);
+            } else {
+                // Unmark any previously helpful answers for this question
+                for (Answer ans : answerListView.getItems()) {
+                    if (ans.isCorrect()) {
+                        ans.setCorrect(false);
+                        dao.updateAnswer(ans);
+                    }
+                }
+                // Mark selected as helpful
+                selected.setCorrect(true);
+                dao.updateAnswer(selected);
+            }
+
+            answerListView.refresh();
+            displayQuestionDetail(selectedQuestion);
+
+        } catch (SQLException e) {
+            showError("Error updating helpful status: " + e.getMessage());
         }
     }
 }
