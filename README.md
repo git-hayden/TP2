@@ -1,4 +1,7 @@
-# CSE 360 Team Project Phase 2 Report
+# CSE 360 Team Project Phase 2
+
+## Overview
+Phase 2 builds on a Discussion Board Q&A system within a JavaFX application. Students can ask questions, provide answers, and interact with replies. The system supports search, filtering, and marking answers as correct to resolve questions. Permissions are role-based: students can only edit/delete their own posts, while admins have full control.
 
 ## Key Changes in Phase 2
 - **Discussion Board**: Entire discussion board module with database access object.
