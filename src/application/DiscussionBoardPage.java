@@ -12,7 +12,7 @@ import databasePart1.DiscussionBoardDAO;
 import java.sql.SQLException;
 
 //UI for the discussion board
-public class DisussionBoardPage {
+public class DiscussionBoardPage {
     private Stage stage;
     private String currentUserName;
     private String currentUserRole;
@@ -25,10 +25,13 @@ public class DisussionBoardPage {
     private TextField searchField;
     private ComboBox<String> filterComboBox;
 
-    //currently selected question 
+    //currently selected question
     private Question selectedQuestion;
 
-    public DisussionBoardPage(Stage stage, String currentUserName, String currentUserRole) {
+    private Button markCorrectBtn;
+    private Button markHelpfulBtn;
+
+    public DiscussionBoardPage(Stage stage, String currentUserName, String currentUserRole) {
         this.stage = stage;
         this.currentUserName = currentUserName;
         this.currentUserRole = currentUserRole;
@@ -80,7 +83,7 @@ public class DisussionBoardPage {
 
         searchBox.getChildren().addAll(new Label("Search:"), searchField, searchButton, clearSearchButton);
 
-        //filter 
+        //filter
         HBox filterBox = new HBox(10);
         filterComboBox = new ComboBox<>();
         filterComboBox.setItems(FXCollections.observableArrayList("All", "Answered", "Unanswered", "My Questions"));
@@ -103,7 +106,7 @@ public class DisussionBoardPage {
         questionListView = new ListView<>();
         questionListView.setPrefHeight(600);
 
-        //cell factory for question list    
+        //cell factory for question list
         questionListView.setCellFactory(lv -> new ListCell<Question>() {
             @Override
             protected void updateItem(Question question, boolean empty) {
@@ -111,14 +114,13 @@ public class DisussionBoardPage {
                 if (empty || question == null) {
                     setText(null);
                 } else{
-                    String status = question.getIsAnswered() ? "[✓]" : "[?]";
-                    setText(status + " " + question.getTitle()+ " (" + question.getAuthorUserName() + ")");
-    
+                	String status = question.getIsAnswered() ? "[✓]" : "[?]";
+                	setText(status + " " + question.getTitle()+ " (" + question.getAuthorUserName() + ")");
                 }
             }
         });
 
-        questionListView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> displayQuestionDetail(newVal)); 
+        questionListView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> displayQuestionDetail(newVal));
 
         loadQuestions();
         questionsBox.getChildren().addAll(questionLabel, questionListView);
@@ -153,9 +155,54 @@ public class DisussionBoardPage {
                 super.updateItem(answer, empty);
                 if (empty || answer == null) {
                     setText(null);
+                    setGraphic(null);
                 } else {
-                    String status = answer.getIsAccepted() ? "[ACCEPTED] " : "";
-                    setText(status + answer.getContent() + "\n - " + answer.getAuthorUserName() + " (" + answer.getCreatedAt().toLocalDate() + ")");
+                    java.time.format.DateTimeFormatter formatter =
+                        java.time.format.DateTimeFormatter.ofPattern("hh:mm a · MMM dd, yyyy");
+
+                    String timeInfo = (answer.getCreatedAt() != null)
+                            ? answer.getCreatedAt().format(formatter)
+                            : "unknown time";
+
+                    Label contentLabel = new Label(String.format(
+                        "%s\n(by %s at %s)",
+                        answer.getContent(),
+                        answer.getAuthorUserName(),
+                        timeInfo
+                    ));
+                    contentLabel.setWrapText(true);
+
+                    VBox statusBox = new VBox(2);
+
+                    if (answer.getIsAccepted()) {
+                        Label verifiedLabel = new Label("          [✓] Verified Answer");
+                        verifiedLabel.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
+                        statusBox.getChildren().add(verifiedLabel);
+                    }
+
+                    if (answer.isCorrect()) {
+                        Label helpfulLabel = new Label("          [✓] Student Found Helpful");
+                        helpfulLabel.setStyle("-fx-text-fill: blue; -fx-font-weight: bold;");
+                        statusBox.getChildren().add(helpfulLabel);
+                    }
+
+                    HBox hBox = new HBox(10);
+                    hBox.setAlignment(Pos.CENTER_LEFT);
+                    HBox.setHgrow(contentLabel, Priority.ALWAYS);
+                    hBox.getChildren().addAll(contentLabel, statusBox);
+
+                    setGraphic(hBox);
+                    setText(null);
+                }
+            }
+        });
+
+        answerListView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            if (markCorrectBtn != null) {
+                if (newVal != null && newVal.getIsAccepted()) {
+                    markCorrectBtn.setText("Mark as Incorrect");
+                } else {
+                    markCorrectBtn.setText("Mark as Correct");
                 }
             }
         });
@@ -194,6 +241,16 @@ public class DisussionBoardPage {
         Button deleteAnswerBtn = new Button("Delete Answer");
         deleteAnswerBtn.setPrefWidth(180);
         deleteAnswerBtn.setOnAction(e -> deleteAnswer());
+        // Mark as Correct button (admin only)
+        markCorrectBtn = new Button("Mark as Correct");
+        markCorrectBtn.setPrefWidth(180);
+        markCorrectBtn.setOnAction(e -> markAnswerAsCorrect());
+        markCorrectBtn.setDisable(!"admin".equals(currentUserRole));
+        // Mark as Helpful button (student only)
+        markHelpfulBtn = new Button("Mark as Helpful");
+        markHelpfulBtn.setPrefWidth(180);
+        markHelpfulBtn.setOnAction(e -> markAnswerAsHelpful());
+        markHelpfulBtn.setDisable("admin".equals(currentUserRole));
         //refresh button
         Button refreshBtn = new Button("Refresh");
         refreshBtn.setPrefWidth(180);
@@ -202,13 +259,23 @@ public class DisussionBoardPage {
         Button backBtn = new Button("Back");
         backBtn.setPrefWidth(180);
         backBtn.setOnAction(e -> goBack());
-        actionBox.getChildren().addAll(
-            createQuestionBtn, editQuestionBtn, deleteQuestionBtn,
-            new Separator(),
-            addAnswerBtn, editAnswerBtn, deleteAnswerBtn,
-            new Separator(),
-            refreshBtn, backBtn
-        );
+        if ("admin".equals(currentUserRole)) {
+            actionBox.getChildren().addAll(
+                createQuestionBtn, editQuestionBtn, deleteQuestionBtn,
+                new Separator(),
+                addAnswerBtn, editAnswerBtn, deleteAnswerBtn, markCorrectBtn,
+                new Separator(),
+                refreshBtn, backBtn
+            );
+        } else {
+            actionBox.getChildren().addAll(
+                createQuestionBtn, editQuestionBtn, deleteQuestionBtn,
+                new Separator(),
+                addAnswerBtn, editAnswerBtn, deleteAnswerBtn, markHelpfulBtn,
+                new Separator(),
+                refreshBtn, backBtn
+            );
+        }
         return actionBox;
     }
 
@@ -235,14 +302,14 @@ public class DisussionBoardPage {
 
         TextField categoryField = new TextField();
         categoryField.setPromptText("Enter the category of the question (optional)");
-        
+
         grid.add(new Label("Title:"), 0, 0);
         grid.add(titleField, 1, 0);
         grid.add(new Label("Content:"), 0, 1);
         grid.add(contentField, 1, 1);
         grid.add(new Label("Category:"), 0, 2);
         grid.add(categoryField, 1, 2);
-    
+
         dialog.getDialogPane().setContent(grid);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
@@ -262,7 +329,7 @@ public class DisussionBoardPage {
                 if (category != null && !category.trim().isEmpty()) {
                     newQuestion.setCategory(category.trim());
                 }
-                
+
                 try {
                     dao.createQuestion(newQuestion);
                     showInfo("Question created successfully!");
@@ -282,7 +349,7 @@ public class DisussionBoardPage {
             return;
         }
         //check permissions (only admin or author can edit)
-        if(!selectedQuestion.getAuthorUserName().equals(currentUserName) && !currentUserRole.equals("Admin")) {
+        if(!selectedQuestion.getAuthorUserName().equals(currentUserName) && !currentUserRole.equals("admin")) {
             showError("You are not authorized to edit this question");
             return;
         }
@@ -300,7 +367,7 @@ public class DisussionBoardPage {
         contentField.setPrefRowCount(5);
         contentField.setWrapText(true);
         TextField categoryField = new TextField(selectedQuestion.getCategory() != null ? selectedQuestion.getCategory() : "");
-        
+
         grid.add(new Label("Title:"), 0, 0);
         grid.add(titleField, 1, 0);
         grid.add(new Label("Content:"), 0, 1);
@@ -346,7 +413,7 @@ public class DisussionBoardPage {
             return;
         }
         //check permissions (only admin or author can delete)
-        if(!selectedQuestion.getAuthorUserName().equals(currentUserName) && !currentUserRole.equals("Admin")) {
+        if(!selectedQuestion.getAuthorUserName().equals(currentUserName) && !currentUserRole.equals("admin")) {
             showError("You are not authorized to delete this question");
             return;
         }
@@ -390,14 +457,24 @@ public class DisussionBoardPage {
             }
             Answer newAnswer = new Answer(selectedQuestion.getQuestionId(), response.trim(), currentUserName);
             try {
+                // Save the new answer to the database
                 dao.createAnswer(newAnswer);
+
+                // Update the question's answered status
+                selectedQuestion.setIsAnswered(true);
+                dao.updateQuestion(selectedQuestion);
+
+                // Add the new answer to the ListView without removing existing items
+                answerListView.getItems().add(newAnswer);
+                answerListView.refresh();
+
                 showInfo("Answer added successfully!");
-                displayQuestionDetail(selectedQuestion);
             } catch (SQLException e) {
                 showError("Failed to add answer: " + e.getMessage());
             }
         });
     }
+
     //edit an answer
     private void editAnswer() {
         Answer selectedAnswer = answerListView.getSelectionModel().getSelectedItem();
@@ -406,7 +483,7 @@ public class DisussionBoardPage {
             return;
         }
         //check permissions (only author or admin can edit)
-        if(!selectedAnswer.getAuthorUserName().equals(currentUserName) && !currentUserRole.equals("Admin")) {
+        if(!selectedAnswer.getAuthorUserName().equals(currentUserName) && !currentUserRole.equals("admin")) {
             showError("You are not authorized to edit this answer");
             return;
         }
@@ -438,7 +515,7 @@ public class DisussionBoardPage {
             return;
         }
         //check permissions (only author or admin can delete)
-        if(!selectedAnswer.getAuthorUserName().equals(currentUserName) && !currentUserRole.equals("Admin")) {
+        if(!selectedAnswer.getAuthorUserName().equals(currentUserName) && !currentUserRole.equals("admin")) {
             showError("You are not authorized to delete this answer");
             return;
         }
@@ -462,7 +539,7 @@ public class DisussionBoardPage {
 
     //helper methods
 
-    //load questions 
+    //load questions
     private void loadQuestions() {
         try {
             Questions questions = dao.getAllQuestions();
@@ -553,7 +630,7 @@ public class DisussionBoardPage {
 
     //navigate to home page for role
     private void goBack() {
-        if(currentUserRole.equals("Admin")) {
+        if(currentUserRole.equals("admin")) {
             AdminHomePage adminHomePage = new AdminHomePage(stage,currentUserName);
             stage.setScene(adminHomePage.createScene());
         } else {
@@ -573,5 +650,93 @@ public class DisussionBoardPage {
         alert.setTitle("Information");
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    // Mark selected answer as correct (admin only)
+    private void markAnswerAsCorrect() {
+        Answer selected = answerListView.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showError("Please select an answer to mark/unmark as correct.");
+            return;
+        }
+
+        try {
+            boolean wasAccepted = selected.getIsAccepted();
+
+            if (wasAccepted) {
+                // Unmark this answer
+                selected.setIsAccepted(false);
+                dao.updateAnswer(selected);
+
+                // Update the question to "unanswered" if no accepted answers remain
+                boolean anyAccepted = answerListView.getItems().stream().anyMatch(a -> a != selected && a.getIsAccepted());
+                selectedQuestion.setIsAnswered(anyAccepted);
+                dao.updateQuestion(selectedQuestion);
+
+                markCorrectBtn.setText("Mark as Correct");
+            } else {
+                // Unmark all other answers for this question
+                for (Answer ans : answerListView.getItems()) {
+                    if (ans.getIsAccepted()) {
+                        ans.setIsAccepted(false);
+                        dao.updateAnswer(ans);
+                    }
+                }
+
+                // Mark the selected answer as accepted
+                selected.setIsAccepted(true);
+                dao.updateAnswer(selected);
+
+                // Update the question as answered
+                selectedQuestion.setIsAnswered(true);
+                dao.updateQuestion(selectedQuestion);
+
+                markCorrectBtn.setText("Mark as Incorrect");
+            }
+
+            answerListView.refresh();
+            questionListView.getItems().set(questionListView.getSelectionModel().getSelectedIndex(), selectedQuestion);
+            questionListView.refresh();
+            displayQuestionDetail(selectedQuestion);
+
+        } catch (SQLException e) {
+            showError("Failed to update answer status: " + e.getMessage());
+        }
+    }
+    
+    // Mark selected answer as helpful (student only)
+    private void markAnswerAsHelpful() {
+        Answer selected = answerListView.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showError("Please select an answer to mark/unmark as helpful.");
+            return;
+        }
+
+        try {
+            boolean isHelpful = selected.isCorrect();
+
+            if (isHelpful) {
+                // Unmark
+                selected.setCorrect(false);
+                dao.updateAnswer(selected);
+            } else {
+                // Unmark any previously helpful answers for this question
+                for (Answer ans : answerListView.getItems()) {
+                    if (ans.isCorrect()) {
+                        ans.setCorrect(false);
+                        dao.updateAnswer(ans);
+                    }
+                }
+                // Mark selected as helpful
+                selected.setCorrect(true);
+                dao.updateAnswer(selected);
+            }
+
+            answerListView.refresh();
+            displayQuestionDetail(selectedQuestion);
+
+        } catch (SQLException e) {
+            showError("Error updating helpful status: " + e.getMessage());
+        }
     }
 }

@@ -62,6 +62,7 @@ public class DiscussionBoardDAO {
     "createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
     "updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
     "isAccepted BOOLEAN DEFAULT FALSE," +
+    "isCorrect BOOLEAN DEFAULT FALSE," +
     "FOREIGN KEY (questionId) REFERENCES questions(questionId))";
 
     statement.execute(answersTable);
@@ -192,13 +193,14 @@ public class DiscussionBoardDAO {
         }
         //update an answer
         public boolean updateAnswer(Answer answer) throws SQLException {
-            String sql = "UPDATE answers SET content = ?, updatedAt = ?, isAccepted = ? WHERE answerId = ?";
+            String sql = "UPDATE answers SET content = ?, updatedAt = ?, isAccepted = ?, isCorrect = ? WHERE answerId = ?";
             
             try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
                 pstmt.setString(1, answer.getContent());
                 pstmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()));
                 pstmt.setBoolean(3, answer.getIsAccepted());
-                pstmt.setInt(4, answer.getAnswerId());
+                pstmt.setBoolean(4, answer.isCorrect());
+                pstmt.setInt(5, answer.getAnswerId());
                 
                 return pstmt.executeUpdate() > 0;
             }
@@ -236,6 +238,7 @@ public class DiscussionBoardDAO {
                 rs.getTimestamp("updatedAt").toLocalDateTime(),
                 rs.getBoolean("isAccepted")
             );
+            a.setCorrect(rs.getBoolean("isCorrect"));
             return a;
         }
 

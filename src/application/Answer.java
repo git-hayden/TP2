@@ -11,6 +11,7 @@ public class Answer {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean isAccepted;
+    private boolean isCorrect;
 
     //constructor getter and setter
     public Answer(int questionId, String content, String authorUserName) {
@@ -19,23 +20,34 @@ public class Answer {
         this.authorUserName = authorUserName;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
-        this.isAccepted = false;
+	    this.isAccepted = false;
+	    this.isCorrect = false;
     }
 
     //constructor with all fields for db retrieval
     public Answer(int answerId, int questionId, String content, String authorUserName, LocalDateTime createdAt, LocalDateTime updatedAt, boolean isAccepted) {
-        this.answerId = answerId;
-        this.questionId = questionId;
-        this.content = content;
-        this.authorUserName = authorUserName;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.isAccepted = isAccepted;
+	    this.answerId = answerId;
+	    this.questionId = questionId;
+	    this.content = content;
+	    this.authorUserName = authorUserName;
+	    this.createdAt = createdAt;
+	    this.updatedAt = updatedAt;
+	    this.isAccepted = isAccepted;
+	    this.isCorrect = false;
     }
 
     //getters and setters
     public int getAnswerId() {
         return answerId;
+    }
+
+    public boolean isCorrect() {
+        return isCorrect;
+    }
+
+    public void setCorrect(boolean correct) {
+        this.isCorrect = correct;
+        this.updatedAt = LocalDateTime.now();
     }
     public int getQuestionId() {
         return questionId;
@@ -77,7 +89,7 @@ public class Answer {
     public void setIsAccepted(boolean isAccepted) {
         this.isAccepted = isAccepted;
         this.updatedAt = LocalDateTime.now(); //update the updatedAt time
-    }   
+    }
     //accept the answer
     public void markAsAccepted() {
         this.isAccepted = true;
@@ -87,6 +99,18 @@ public class Answer {
     public void markAsNotAccepted() {
         this.isAccepted = false;
         this.updatedAt = LocalDateTime.now(); //update the updatedAt time
+    }
+
+    // allow a student to mark the answer as correct
+    public void markAsCorrectByStudent() {
+        this.isCorrect = true;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    // allow an admin to mark the answer as correct
+    public void markAsCorrectByAdmin() {
+        this.isCorrect = true;
+        this.updatedAt = LocalDateTime.now();
     }
     @Override
     public String toString() {
