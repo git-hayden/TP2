@@ -8,6 +8,8 @@ import application.Question;
 import application.Answer;
 import application.Questions;
 import application.Answers;
+import application.Reply;
+import application.Replies;
 
 //data access object for the discussion board
 public class DiscussionBoardDAO {
@@ -66,6 +68,18 @@ public class DiscussionBoardDAO {
     "FOREIGN KEY (questionId) REFERENCES questions(questionId))";
 
     statement.execute(answersTable);
+    
+    //replies table.
+    String repliesTable = "CREATE TABLE IF NOT EXISTS replies(" +
+    "replyId INT AUTO_INCREMENT PRIMARY KEY," +
+    "answerId INT NOT NULL," +
+    "content TEXT NOT NULL," +
+    "authorUserName VARCHAR(255) NOT NULL," +
+    "createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
+    "updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
+    "FOREIGN KEY (answerId) REFERENCES answers(answerId))";
+
+    statement.execute(repliesTable);
     }
     //insert a question 
     public int createQuestion(Question question) throws SQLException {
@@ -213,6 +227,94 @@ public class DiscussionBoardDAO {
                 return pstmt.executeUpdate() > 0;
             }
         }
+        //get answer by id
+        public Answer getAnswerById(int answerId) throws SQLException {
+            String sql = "SELECT * FROM answers WHERE answerId = ?";
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                pstmt.setInt(1, answerId);
+                ResultSet rs = pstmt.executeQuery();
+                if (rs.next()) {
+                    return extractAnswerFromResultSet(rs);
+                }
+            }
+            return null;
+        }
+        
+        //REPLY CRUD OPERATIONS
+
+        //insert a reply
+        public int createReply(Reply reply) throws SQLException {
+            String sql = "INSERT INTO replies (answerId, content, authorUserName, createdAt, updatedAt) "
+                    + "VALUES (?, ?, ?, ?, ?)";
+            
+            try (PreparedStatement pstmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                pstmt.setInt(1, reply.getAnswerId());
+                pstmt.setString(2, reply.getContent());
+                pstmt.setString(3, reply.getAuthorUserName()); 
+                pstmt.setTimestamp(4, Timestamp.valueOf(reply.getCreatedAt()));
+                pstmt.setTimestamp(5, Timestamp.valueOf(reply.getUpdatedAt()));
+                
+                pstmt.executeUpdate();
+                
+                // generate replyId
+                ResultSet rs = pstmt.getGeneratedKeys();
+                if (rs.next()) {
+                    int generatedId = rs.getInt(1);
+                    reply.setReplyId(generatedId);
+                    return generatedId;
+                }
+            }
+            return -1;
+        }
+        //get all replies for an answer
+        public Replies getRepliesForAnswer(int answerId) throws SQLException {
+            Replies replies = new Replies();
+            String sql = "SELECT * FROM replies WHERE answerId = ? ORDER BY createdAt ASC";
+            
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                pstmt.setInt(1, answerId);
+                ResultSet rs = pstmt.executeQuery();
+                
+                while (rs.next()) {
+                    Reply r = extractReplyFromResultSet(rs);
+                    replies.addReply(r);
+                }
+            }
+            return replies;
+        }
+        //get all replies
+        public Replies getAllReplies() throws SQLException {
+            Replies replies = new Replies();
+            String sql = "SELECT * FROM answers ORDER BY createdAt DESC";
+            try (PreparedStatement pstmt = connection.prepareStatement(sql);
+                 ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    Reply r = extractReplyFromResultSet(rs);
+                    replies.addReply(r);
+                }
+            }
+            return replies;
+        }
+        //update a reply
+        public boolean updateReply(Reply reply) throws SQLException {
+            String sql = "UPDATE replies SET content = ?, updatedAt = ? WHERE replyId = ?";
+            
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                pstmt.setString(1, reply.getContent());
+                pstmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()));
+                pstmt.setInt(3, reply.getReplyId());
+                
+                return pstmt.executeUpdate() > 0;
+            }
+        }
+        //delete a reply
+        public boolean deleteReply(int replyId) throws SQLException {
+            String sql = "DELETE FROM replies WHERE replyId = ?";
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                pstmt.setInt(1, replyId);
+                return pstmt.executeUpdate() > 0;
+            }
+        }
         //helper methods for all operations
         private Question extractQuestionFromResultSet(ResultSet rs) throws SQLException {
             Question q = new Question(
@@ -227,7 +329,7 @@ public class DiscussionBoardDAO {
             q.setCategory(rs.getString("category"));
             return q;
         }
-        //extract an answer from the result set
+        // extract an answer from the result set
         private Answer extractAnswerFromResultSet(ResultSet rs) throws SQLException {
             Answer a = new Answer(
                 rs.getInt("answerId"),
@@ -240,6 +342,18 @@ public class DiscussionBoardDAO {
             );
             a.setCorrect(rs.getBoolean("isCorrect"));
             return a;
+        }
+        // extract a reply from the result set
+        private Reply extractReplyFromResultSet(ResultSet rs) throws SQLException {
+            Reply r = new Reply(
+                rs.getInt("replyId"),
+                rs.getInt("answerId"),
+                rs.getString("content"),
+                rs.getString("authorUserName"),
+                rs.getTimestamp("createdAt").toLocalDateTime(),
+                rs.getTimestamp("updatedAt").toLocalDateTime()
+            );
+            return r;
         }
 
         //finally, close the connection
