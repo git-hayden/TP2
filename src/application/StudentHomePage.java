@@ -30,7 +30,7 @@ public class StudentHomePage {
     Button discussionBoardBtn = new Button("Discussion Board");
     discussionBoardBtn.setPrefWidth(200);
     discussionBoardBtn.setOnAction(e -> {
-        DisussionBoardPage dbPage = new DisussionBoardPage(stage, userName, "Student");
+        DiscussionBoardPage dbPage = new DiscussionBoardPage(stage, userName, "Student");
         stage.setScene(dbPage.createScene());
 
     });
