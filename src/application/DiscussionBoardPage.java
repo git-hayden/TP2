@@ -780,6 +780,9 @@ public class DiscussionBoardPage {
         if(currentUserRole.equals("admin")) {
             AdminHomePage adminHomePage = new AdminHomePage(stage,currentUserName);
             stage.setScene(adminHomePage.createScene());
+        } else if(currentUserRole.equals("Student")) {
+            StudentHomePage studentHomePage = new StudentHomePage(stage,currentUserName);
+            stage.setScene(studentHomePage.createScene());
         } else {
             UserHomePage userHomePage = new UserHomePage(stage,currentUserName);
             stage.setScene(userHomePage.createScene());

@@ -31,15 +31,17 @@ public class WelcomeLoginPage {
 	    continueButton.setOnAction(a -> {
 	    	String role =user.getRole();
 	    	System.out.println(role);
-	    	
-	    	if(role.equals("admin")) {
-	    		AdminHomePage adminHomePage = new AdminHomePage(primaryStage, user.getUserName());
-	    		adminHomePage.show(primaryStage);
-	    	}
-	    	else if(role.equals("user")) {
-	    		UserHomePage userHomePage = new UserHomePage(primaryStage, user.getUserName());
-	    		userHomePage.show(primaryStage);
-	    	}
+
+			if(role.equals("admin")) {
+				AdminHomePage adminHomePage = new AdminHomePage(primaryStage, user.getUserName());
+				primaryStage.setScene(adminHomePage.createScene());
+			} else if(role.equals("student")) {
+				StudentHomePage studentHomePage = new StudentHomePage(primaryStage, user.getUserName());
+				primaryStage.setScene(studentHomePage.createScene());
+			} else {
+				UserHomePage userHomePage = new UserHomePage(primaryStage, user.getUserName());
+				primaryStage.setScene(userHomePage.createScene());
+			}
 	    });
 	    
 	    // Button to quit the application
