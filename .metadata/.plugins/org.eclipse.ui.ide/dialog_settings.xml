@@ -114,16 +114,27 @@
 	</list>
 	<section name="ExternalProjectImportWizard">
 		<item key="WizardProjectsImportPage.STORE_NESTED_PROJECTS" value="false"/>
-		<item key="WizardProjectsImportPage.STORE_COPY_PROJECT_ID" value="false"/>
+		<item key="WizardProjectsImportPage.STORE_COPY_PROJECT_ID" value="true"/>
 		<item key="WizardProjectsImportPage.STORE_ARCHIVE_SELECTED" value="false"/>
 		<item key="WizardProjectsImportPage.STORE_CLOSE_CREATED_PROJECTS_ID" value="false"/>
 		<item key="WizardProjectsImportPage.STORE_HIDE_CONFLICTING_PROJECTS_ID" value="false"/>
 		<list key="WizardProjectsImportPage.STORE_DIRECTORIES">
+			<item value="D:\ASU Online\CSE 360\TP3\TP3"/>
+			<item value="D:\ASU Online\CSE 360\TP3"/>
+			<item value="D:\ASU Online\CSE 360\TP3\TP2"/>
 			<item value="C:\Users\Hayden\Downloads\HW2"/>
 		</list>
 		<list key="WizardProjectsImportPage.STORE_ARCHIVES">
+			<item value="D:\ASU Online\CSE 360\TP3\TP2\src"/>
 			<item value=""/>
 		</list>
+		<section name="ExternalProjectImportWizard.dialogBounds">
+			<item key="DIALOG_X_ORIGIN" value="704"/>
+			<item key="DIALOG_Y_ORIGIN" value="204"/>
+			<item key="DIALOG_WIDTH" value="525"/>
+			<item key="DIALOG_HEIGHT" value="663"/>
+			<item key="DIALOG_FONT_NAME" value="1|Segoe UI|9.0|0|WINDOWS|1|-21|0|0|0|400|0|0|0|1|0|0|0|0|Segoe UI"/>
+		</section>
 	</section>
 	<section name="ChooseWorkspaceDialogSettings">
 		<item key="DIALOG_X_ORIGIN" value="220"/>
@@ -139,14 +150,24 @@
 		<item key="SmartImportRootWizardPage.STORE_NESTED_PROJECTS" value="true"/>
 		<item key="SmartImportRootWizardPage.STORE_CONFIGURE_NATURES" value="true"/>
 		<list key="org.eclipse.ui.internal.wizards.datatransfer.SmartImportRootWizardPage.knownSources">
+			<item value="D:\ASU Online\CSE 360\TP3\TP3"/>
+			<item value="D:\ASU Online\CSE 360\TP3\TP2\src"/>
+			<item value="D:\ASU Online\CSE 360\TP3\TP2\src\application"/>
+			<item value="D:\ASU Online\CSE 360\TP3\TP2"/>
 			<item value="D:\ASU Online\CSE 360\TP2"/>
 		</list>
 		<section name="SmartImportWizard.dialogBounds">
 			<item key="DIALOG_X_ORIGIN" value="83"/>
-			<item key="DIALOG_Y_ORIGIN" value="-6"/>
+			<item key="DIALOG_Y_ORIGIN" value="6"/>
 			<item key="DIALOG_WIDTH" value="858"/>
 			<item key="DIALOG_HEIGHT" value="586"/>
 			<item key="DIALOG_FONT_NAME" value="1|Segoe UI|9.0|0|WINDOWS|1|-21|0|0|0|400|0|0|0|1|0|0|0|0|Segoe UI"/>
 		</section>
+	</section>
+	<section name="CleanDialogSettings">
+		<item key="TOGGLE_SELECTED" value="false"/>
+		<item key="DIALOG_WIDTH" value="496"/>
+		<item key="DIALOG_HEIGHT" value="369"/>
+		<item key="DIALOG_FONT_NAME" value="1|Segoe UI|9.0|0|WINDOWS|1|-21|0|0|0|400|0|0|0|1|0|0|0|0|Segoe UI"/>
 	</section>
 </section>

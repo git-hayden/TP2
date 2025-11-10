@@ -55,6 +55,14 @@ public class DatabaseHelper {
 	            + "code VARCHAR(10) PRIMARY KEY, "
 	            + "isUsed BOOLEAN DEFAULT FALSE)";
 	    statement.execute(invitationCodesTable);
+
+		// Create the trusted reviewers table
+		String trustedReviewersTable = "CREATE TABLE IF NOT EXISTS trusted_reviewers ("
+				+ "id INT AUTO_INCREMENT PRIMARY KEY, "
+				+ "studentUserName VARCHAR(255) NOT NULL, "
+				+ "reviewerUserName VARCHAR(255) NOT NULL, "
+				+ "UNIQUE(studentUserName, reviewerUserName))";
+		statement.execute(trustedReviewersTable);
 	}
 
 
@@ -166,6 +174,85 @@ public class DatabaseHelper {
 	        pstmt.executeUpdate();
 	    } catch (SQLException e) {
 	        e.printStackTrace();
+	    }
+	}
+
+	/**
+	 * Adds a reviewer to a student's trusted reviewers list.
+	 * @param studentUserName The username of the student
+	 * @param reviewerUserName The username of the reviewer to trust
+	 * @return true if the reviewer was successfully added, false otherwise
+	 */
+	public boolean addTrust(String studentUserName, String reviewerUserName) throws SQLException {
+		if (studentUserName == null || reviewerUserName == null ||
+			studentUserName.equals(reviewerUserName)) {
+			return false;
+		}
+
+		String sql = "INSERT INTO trusted_reviewers (studentUserName, reviewerUserName) VALUES (?, ?)";
+		try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+			pstmt.setString(1, studentUserName);
+			pstmt.setString(2, reviewerUserName);
+			pstmt.executeUpdate();
+			return true;
+		} catch (SQLException e) {
+			// If the unique constraint is violated, the reviewer is already trusted
+			if (e.getErrorCode() == 23505 || e.getMessage().contains("UNIQUE")) {
+				return false; // Already exists
+			}
+			throw e;
+		}
+	}
+
+	/**
+	 * Removes a reviewer from a student's trusted reviewers list.
+	 * @param studentUserName The username of the student
+	 * @param reviewerUserName The username of the reviewer to remove from trust
+	 * @return true if the reviewer was successfully removed, false otherwise
+	 */
+	public boolean removeTrust(String studentUserName, String reviewerUserName) throws SQLException {
+		if (studentUserName == null || reviewerUserName == null) {
+			return false;
+		}
+
+		String sql = "DELETE FROM trusted_reviewers WHERE studentUserName = ? AND reviewerUserName = ?";
+		try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+			pstmt.setString(1, studentUserName);
+			pstmt.setString(2, reviewerUserName);
+			return pstmt.executeUpdate() > 0;
+		}
+	}
+
+	/**
+	 * Returns a list of trusted reviewers for a given student.
+	 * @param studentUserName The username of the student
+	 * @return List of reviewer usernames that the student trusts
+	 */
+	public java.util.List<String> viewTrust(String studentUserName) throws SQLException {
+		java.util.List<String> trustedReviewers = new java.util.ArrayList<>();
+		if (studentUserName == null) {
+			return trustedReviewers;
+		}
+
+		String sql = "SELECT reviewerUserName FROM trusted_reviewers WHERE studentUserName = ?";
+		try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+			pstmt.setString(1, studentUserName);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while (rs.next()) {
+					trustedReviewers.add(rs.getString("reviewerUserName"));
+				}
+			}
+		}
+		return trustedReviewers;
+	}
+	
+	// helper to clear trusts
+	public void removeAllTrusts(String studentUserName) throws SQLException {
+	    if (studentUserName == null) return;
+	    String sql = "DELETE FROM trusted_reviewers WHERE studentUserName = ?";
+	    try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+	        pstmt.setString(1, studentUserName);
+	        pstmt.executeUpdate();
 	    }
 	}
 
